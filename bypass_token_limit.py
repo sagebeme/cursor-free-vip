@@ -8,6 +8,7 @@ import configparser
 import sys
 from config import get_config
 from datetime import datetime
+from core import logger, FileOperationError
 
 # Initialize colorama
 init()
@@ -179,8 +180,10 @@ def modify_workbench_js(file_path: str, translator=None) -> bool:
         if "tmp_path" in locals():
             try:
                 os.unlink(tmp_path)
-            except:
-                pass
+            except (OSError, PermissionError) as e:
+                logger.warning(f"Failed to remove temporary file {tmp_path}: {e}")
+            except Exception as e:
+                logger.error(f"Unexpected error cleaning up temporary file: {e}", exc_info=True)
         return False
     
 def run(translator=None):

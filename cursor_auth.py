@@ -1,8 +1,11 @@
 import sqlite3
 import os
 import sys
+from contextlib import contextmanager
+from typing import Iterator, Optional
 from colorama import Fore, Style, init
 from config import get_config
+from core import logger, DatabaseError
 
 # Initialize colorama
 init()
@@ -18,6 +21,47 @@ EMOJI = {
     'FILE': '📄',
     'KEY': '🔐'
 }
+
+
+@contextmanager
+def get_db_connection(db_path: str) -> Iterator[sqlite3.Connection]:
+    """Context manager for database connections
+    
+    Args:
+        db_path: Path to SQLite database
+        
+    Yields:
+        sqlite3.Connection: Database connection
+        
+    Raises:
+        DatabaseError: If connection cannot be established
+    """
+    conn = None
+    try:
+        # Ensure the directory exists
+        db_dir = os.path.dirname(db_path)
+        if not os.path.exists(db_dir):
+            os.makedirs(db_dir, mode=0o755, exist_ok=True)
+        
+        conn = sqlite3.connect(db_path, timeout=10.0)
+        conn.execute("PRAGMA busy_timeout = 5000")
+        conn.execute("PRAGMA journal_mode = WAL")
+        conn.execute("PRAGMA synchronous = NORMAL")
+        yield conn
+        conn.commit()
+    except sqlite3.Error as e:
+        if conn:
+            conn.rollback()
+        logger.error(f"Database operation failed: {e}", exc_info=True)
+        raise DatabaseError(f"Database operation failed: {e}") from e
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        logger.error(f"Unexpected database error: {e}", exc_info=True)
+        raise DatabaseError(f"Unexpected database error: {e}") from e
+    finally:
+        if conn:
+            conn.close()
 
 class CursorAuth:
     def __init__(self, translator=None):

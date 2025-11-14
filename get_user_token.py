@@ -4,6 +4,7 @@ import time
 from colorama import Fore, Style
 import os
 from config import get_config
+from core import logger, retry_with_backoff, TokenError
 
 # Define emoji constants
 EMOJI = {
@@ -16,6 +17,7 @@ EMOJI = {
     'WARNING': '⚠️'
 }
 
+@retry_with_backoff(max_attempts=3, initial_delay=1.0, exceptions=(requests.RequestException,))
 def refresh_token(token, translator=None):
     """Refresh the token using the Chinese server API
     
@@ -25,6 +27,7 @@ def refresh_token(token, translator=None):
         
     Returns:
         str: The refreshed access token or original token if refresh fails
+        
     """
     try:
         config = get_config(translator)
@@ -66,13 +69,25 @@ def refresh_token(token, translator=None):
             print(f"{Fore.RED}{EMOJI['ERROR']} {translator.get('token.server_error', status=response.status_code) if translator else f'Refresh server error: HTTP {response.status_code}'}{Style.RESET_ALL}")
     
     except requests.exceptions.Timeout:
-        print(f"{Fore.RED}{EMOJI['ERROR']} {translator.get('token.request_timeout') if translator else 'Request to refresh server timed out'}{Style.RESET_ALL}")
+        error_msg = translator.get('token.request_timeout') if translator else 'Request to refresh server timed out'
+        logger.error(error_msg)
+        print(f"{Fore.RED}{EMOJI['ERROR']} {error_msg}{Style.RESET_ALL}")
+        # Return original token as fallback instead of raising
+        return token.split('%3A%3A')[-1] if '%3A%3A' in token else token.split('::')[-1] if '::' in token else token
     except requests.exceptions.ConnectionError:
-        print(f"{Fore.RED}{EMOJI['ERROR']} {translator.get('token.connection_error') if translator else 'Connection error to refresh server'}{Style.RESET_ALL}")
+        error_msg = translator.get('token.connection_error') if translator else 'Connection error to refresh server'
+        logger.error(error_msg)
+        print(f"{Fore.RED}{EMOJI['ERROR']} {error_msg}{Style.RESET_ALL}")
+        # Return original token as fallback instead of raising
+        return token.split('%3A%3A')[-1] if '%3A%3A' in token else token.split('::')[-1] if '::' in token else token
     except Exception as e:
-        print(f"{Fore.RED}{EMOJI['ERROR']} {translator.get('token.unexpected_error', error=str(e)) if translator else f'Unexpected error during token refresh: {str(e)}'}{Style.RESET_ALL}")
+        error_msg = translator.get('token.unexpected_error', error=str(e)) if translator else f'Unexpected error during token refresh: {str(e)}'
+        logger.error(error_msg, exc_info=True)
+        print(f"{Fore.RED}{EMOJI['ERROR']} {error_msg}{Style.RESET_ALL}")
+        # Return original token as fallback instead of raising
+        return token.split('%3A%3A')[-1] if '%3A%3A' in token else token.split('::')[-1] if '::' in token else token
     
-    # Return original token if refresh fails
+    # Return original token if refresh fails (should not reach here normally)
     return token.split('%3A%3A')[-1] if '%3A%3A' in token else token.split('::')[-1] if '::' in token else token
 
 def get_token_from_cookie(cookie_value, translator=None):

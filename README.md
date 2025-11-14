@@ -70,6 +70,57 @@ For optimal performance, run with privileges and always stay up to date.
 
 * Multi-language support (English, 简体中文, 繁體中文, Vietnamese)<br>多語言支持（英文、简体中文、繁體中文、越南語）<br>
 
+## 🛠️ Code Quality Improvements | 代碼質量改進
+
+This project has been enhanced with improved code quality, error handling, and maintainability:
+
+### Core Infrastructure
+* ✅ **Custom Exception Hierarchy** - Better error handling with specific exception types
+* ✅ **Centralized Logging System** - Proper logging with configurable levels
+* ✅ **Retry Logic** - Automatic retry with exponential backoff for network operations
+* ✅ **Progress Indicators** - Visual feedback for long-running operations
+* ✅ **Configuration Validation** - Automatic validation of configuration values
+
+### Improvements Made
+* ✅ Fixed all bare exception handlers with specific exception types
+* ✅ Improved database connection management with context managers
+* ✅ Enhanced error messages with proper logging
+* ✅ Added type hints to core modules
+* ✅ Better code organization and maintainability
+
+### Verification
+To verify all improvements are working correctly:
+```bash
+python3 verify_improvements.py
+```
+
+For more details, see:
+- [Implementation Summary](IMPLEMENTATION_SUMMARY.md)
+- [Improvements Analysis](IMPROVEMENTS_ANALYSIS.md)
+- [Verification Results](VERIFICATION_RESULTS.md)
+
+本項目已改進代碼質量、錯誤處理和可維護性：
+
+### 核心基礎設施
+* ✅ **自定義異常層次結構** - 使用特定異常類型進行更好的錯誤處理
+* ✅ **集中式日誌系統** - 具有可配置級別的正確日誌記錄
+* ✅ **重試邏輯** - 網絡操作的自動重試和指數退避
+* ✅ **進度指示器** - 長時間運行的視覺反饋
+* ✅ **配置驗證** - 自動驗證配置值
+
+### 改進內容
+* ✅ 使用特定異常類型修復所有裸異常處理程序
+* ✅ 使用上下文管理器改進數據庫連接管理
+* ✅ 通過適當的日誌記錄增強錯誤消息
+* ✅ 為核心模塊添加類型提示
+* ✅ 更好的代碼組織和可維護性
+
+### 驗證
+要驗證所有改進是否正常工作：
+```bash
+python3 verify_improvements.py
+```
+
 ## 💻 System Support | 系統支持
 
 | Operating System | Architecture      | Supported |
@@ -222,6 +273,36 @@ max_attempts = 3
 |:--------------------------------------------------:|:------------------------------------------------:|
 | If you encounter permission issues, please ensure: | This script is run with administrator privileges |
 | Error 'User is not authorized' | This means your account was banned for using temporary (disposal) mail. Ensure using a non-temporary mail service |
+## 🧪 Testing & Verification | 測試與驗證
+
+### Quick Verification
+Run the automated verification script to ensure everything is working:
+```bash
+python3 verify_improvements.py
+```
+
+This will test:
+- ✅ All modules can be imported
+- ✅ Core functionality works
+- ✅ No syntax errors
+- ✅ Exception handling works correctly
+
+See [HOW_TO_VERIFY.md](HOW_TO_VERIFY.md) for detailed verification instructions.
+
+### 快速驗證
+運行自動驗證腳本以確保一切正常：
+```bash
+python3 verify_improvements.py
+```
+
+這將測試：
+- ✅ 所有模塊都可以導入
+- ✅ 核心功能正常工作
+- ✅ 沒有語法錯誤
+- ✅ 異常處理正常工作
+
+詳細驗證說明請參見 [HOW_TO_VERIFY.md](HOW_TO_VERIFY.md)。
+
 ## 🤩 Contribution | 貢獻
 
 歡迎提交 Issue 和 Pull Request！

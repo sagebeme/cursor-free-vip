@@ -3,12 +3,14 @@ import time
 import os
 import signal
 import random
+import subprocess
 from colorama import Fore, Style
 import configparser
 from pathlib import Path
 import sys
 from config import get_config 
 from utils import get_default_browser_path as utils_get_default_browser_path
+from core import logger
 
 # Add global variable at the beginning of the file
 _translator = None
@@ -30,14 +32,20 @@ def cleanup_chrome_processes(translator=None):
             for pid in _chrome_process_ids:
                 try:
                     os.system(f'taskkill /F /PID {pid} /T 2>nul')
-                except:
-                    pass
+                except (OSError, subprocess.SubprocessError, ValueError) as e:
+                    # Process may already be terminated or invalid PID
+                    logger.debug(f"Failed to kill process {pid}: {e}")
+                except Exception as e:
+                    logger.warning(f"Unexpected error killing process {pid}: {e}")
         else:
             for pid in _chrome_process_ids:
                 try:
                     os.kill(pid, signal.SIGTERM)
-                except:
-                    pass
+                except (OSError, ProcessLookupError, ValueError) as e:
+                    # Process may already be terminated or invalid PID
+                    logger.debug(f"Failed to kill process {pid}: {e}")
+                except Exception as e:
+                    logger.warning(f"Unexpected error killing process {pid}: {e}")
         _chrome_process_ids = []  # Reset the list after cleanup
     except Exception as e:
         if translator:
@@ -160,8 +168,12 @@ def get_random_wait_time(config, timing_type='page_load_wait'):
         # Process range time
         min_time, max_time = map(float, time_value.split('-' if '-' in time_value else ','))
         return random.uniform(min_time, max_time)
-    except:
+    except (ValueError, TypeError, AttributeError) as e:
+        logger.debug(f"Error parsing timing config: {e}, using default")
         return random.uniform(0.1, 0.8)  # Return default value when error
+    except Exception as e:
+        logger.warning(f"Unexpected error in get_random_wait_time: {e}")
+        return random.uniform(0.1, 0.8)
 
 def setup_driver(translator=None):
     """Setup browser driver"""
@@ -238,8 +250,12 @@ def setup_driver(translator=None):
             }
             process_names = browser_process_names.get(browser_type, ['chrome'])
             before_pids = [p.pid for p in psutil.process_iter() if any(name in p.name().lower() for name in process_names)]
-        except:
-            pass
+        except (ImportError, AttributeError, psutil.NoSuchProcess, psutil.AccessDenied) as e:
+            logger.debug(f"Error getting browser process IDs: {e}")
+            before_pids = []
+        except Exception as e:
+            logger.warning(f"Unexpected error getting browser process IDs: {e}")
+            before_pids = []
             
         # Launch browser
         page = ChromiumPage(co)
@@ -287,8 +303,12 @@ def handle_turnstile(page, config, translator=None):
         # Parse random time range
         try:
             min_time, max_time = map(float, random_time_str.split('-'))
-        except:
+        except (ValueError, AttributeError) as e:
+            logger.debug(f"Error parsing turnstile random time: {e}, using default")
             min_time, max_time = 1, 3  # Default value
+        except Exception as e:
+            logger.warning(f"Unexpected error parsing turnstile time: {e}")
+            min_time, max_time = 1, 3
         
         max_retries = 2
         retry_count = 0
@@ -384,7 +404,11 @@ def check_verification_success(page, translator=None):
                 return False
             
         return False
-    except:
+    except (AttributeError, TypeError) as e:
+        logger.debug(f"Error checking verification success: {e}")
+        return False
+    except Exception as e:
+        logger.warning(f"Unexpected error in check_verification_success: {e}")
         return False
 
 def generate_password(length=12):
@@ -691,8 +715,10 @@ def main(email=None, password=None, first_name=None, last_name=None, email_tab=N
         if page and not success:  # Only clean up when failed
             try:
                 page.quit()
-            except:
-                pass
+            except (AttributeError, RuntimeError) as e:
+                logger.debug(f"Error quitting browser page: {e}")
+            except Exception as e:
+                logger.warning(f"Unexpected error quitting browser page: {e}")
             cleanup_chrome_processes(translator)
 
 if __name__ == "__main__":

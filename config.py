@@ -5,6 +5,7 @@ from colorama import Fore, Style
 from utils import get_user_documents_path, get_linux_cursor_path, get_default_driver_path, get_default_browser_path
 import shutil
 import datetime
+from core import logger, ConfigError, ConfigValidator
 
 EMOJI = {
     "INFO": "ℹ️",
@@ -287,6 +288,16 @@ def setup_config(translator=None):
                 config.write(f)
             if translator:
                 print(f"{Fore.GREEN}{EMOJI['SUCCESS']} {translator.get('config.config_created', config_file=config_file) if translator else f'Config created: {config_file}'}{Style.RESET_ALL}")
+
+        # Validate configuration
+        is_valid, errors = ConfigValidator.validate_config(config)
+        if not is_valid:
+            error_msg = f"Configuration validation failed:\n" + "\n".join(f"  - {e}" for e in errors)
+            logger.warning(error_msg)
+            if translator:
+                print(f"{Fore.YELLOW}{EMOJI['WARNING']} {error_msg}{Style.RESET_ALL}")
+            else:
+                print(f"{Fore.YELLOW}{EMOJI['WARNING']} {error_msg}{Style.RESET_ALL}")
 
         return config
 
